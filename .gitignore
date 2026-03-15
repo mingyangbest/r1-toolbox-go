@@ -1,0 +1,31 @@
+# 编译输出
+build/
+*.exe
+*.so
+*.dylib
+*.test
+*.out
+
+# Go
+vendor/
+go.sum
+
+# 临时文件
+*.log
+*.tmp
+*.swp
+*~
+
+# 配置文件（本地测试用）
+config.yaml
+backgrounds/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# 系统文件
+.DS_Store
+Thumbs.db
+r1-toolbox-go/web-ui/node_modules

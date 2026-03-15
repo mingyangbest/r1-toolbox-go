@@ -1,0 +1,44 @@
+# R1 Toolbox 配置文件示例
+# 安装时会交互式生成实际配置
+
+# 屏幕设置
+screen:
+  width: 376
+  height: 960
+  brightness: 36000
+  timeout: 300  # 息屏时间（秒），0为常亮
+
+# RGB 灯效
+rgb:
+  mode: solid      # off/rainbow/breathing/solid
+  color: green     # red/orange/yellow/green/cyan/blue/purple/white
+  i2c_bus: "0"     # I2C 总线号
+
+fan:
+  cpu:
+    mode: auto
+    pwm_index: 3
+    temp_sensor: "it8628:temp1"
+    min_temp: 35
+    max_temp: 75
+    min_speed: 50
+    max_speed: 255
+  hdd:
+    mode: auto
+    pwm_index: 2
+    temp_sensor: "it8628:temp2"
+    min_temp: 30
+    max_temp: 45
+    min_speed: 50
+    max_speed: 255
+
+# Web 服务器
+web:
+  enabled: true
+  port: 8080
+
+# 硬件路径
+hardware:
+  brightness_path: /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-DSI-1/intel_backlight/brightness
+  hwmon_path: /sys/class/hwmon/hwmon3
+  framebuffer: /dev/fb0
