@@ -50,7 +50,7 @@ sudo systemctl status r1-toolbox
 sudo journalctl -u r1-toolbox -f
 ```
 
-访问 Web 界面：`http://<设备IP>:8855`
+访问 Web 界面：`http://<设备IP>:<port>`
 
 ## 配置
 
@@ -73,11 +73,6 @@ make build
 ./build/r1-toolbox
 ```
 
-## 卸载
-
-```bash
-sudo ./uninstall.sh
-```
 
 ## 许可证
 
