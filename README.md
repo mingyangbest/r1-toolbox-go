@@ -76,4 +76,4 @@ make build
 
 ## 许可证
 
-MIT License
+GPL-3.0 + Commons Clause
