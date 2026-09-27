@@ -33,3 +33,7 @@ func (b *BrightnessController) Set(value int) error {
 	}
 	return os.WriteFile(b.path, []byte(strconv.Itoa(value)), 0644)
 }
+
+// Max 返回硬件背光上限（读自 max_brightness），供接口层做入参校验，
+// 避免越界值被原样写进配置文件持久化。
+func (b *BrightnessController) Max() int { return b.max }

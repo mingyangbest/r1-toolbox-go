@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -45,32 +46,30 @@ func NewTouchHandlerWithI2C() (*TouchHandler, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if err := ts.Open(); err != nil {
 		return nil, err
 	}
-	
+
 	handler := &TouchHandler{
 		touchScreen: ts,
 		useI2C:      true,
 		gestureChan: make(chan TouchGesture, 10),
 		tapChan:     make(chan TapEvent, 10),
 	}
-	
-	// 启动后台goroutine读取触摸事件
+
 	go handler.readTouchLoop()
-	
+
 	return handler, nil
 }
 
-// readTouchLoop 在后台goroutine中读取触摸事件
 func (t *TouchHandler) readTouchLoop() {
 	for t.useI2C && t.touchScreen != nil {
 		point, err := t.touchScreen.ReadTouch()
 		if err != nil || point == nil {
 			continue
 		}
-		
+
 		switch point.Event {
 		case hardware.TouchPress:
 			if !t.isDragging {
@@ -78,17 +77,14 @@ func (t *TouchHandler) readTouchLoop() {
 				t.startY = int32(point.Y)
 				t.startTime = time.Now()
 				t.isDragging = true
-				fmt.Printf("[Gesture] 开始拖动: 起点(%d, %d)\n", t.startX, t.startY)
 			}
-			
+
 		case hardware.TouchRelease:
 			if t.isDragging {
 				endX := int32(point.X)
 				endY := int32(point.Y)
-				fmt.Printf("[Gesture] 结束拖动: 终点(%d, %d)\n", endX, endY)
 				gesture := t.detectGesture(endX, endY)
 				if gesture == GestureTap {
-					// 点击事件，发送坐标
 					select {
 					case t.tapChan <- TapEvent{X: endX, Y: endY}:
 					default:
@@ -118,7 +114,6 @@ func (t *TouchHandler) ReadI2CTouch() TouchGesture {
 	if !t.useI2C || t.touchScreen == nil {
 		return GestureNone
 	}
-	
 	select {
 	case gesture := <-t.gestureChan:
 		return gesture
@@ -132,7 +127,6 @@ func (t *TouchHandler) ReadTap() *TapEvent {
 	if !t.useI2C || t.touchScreen == nil {
 		return nil
 	}
-	
 	select {
 	case tap := <-t.tapChan:
 		return &tap
@@ -141,67 +135,72 @@ func (t *TouchHandler) ReadTap() *TapEvent {
 	}
 }
 
-func (t *TouchHandler) HandleEvent(event sdl.Event) TouchGesture {
+// HandleEvent 处理 SDL 事件，返回手势与（若为点击）坐标
+func (t *TouchHandler) HandleEvent(event sdl.Event) (TouchGesture, *TapEvent) {
 	switch e := event.(type) {
 	case *sdl.MouseButtonEvent:
 		if e.Type == sdl.MOUSEBUTTONDOWN {
 			t.startX, t.startY = e.X, e.Y
 			t.startTime = time.Now()
 			t.isDragging = true
-			fmt.Printf("[Gesture SDL] 鼠标按下: (%d, %d)\n", t.startX, t.startY)
 		} else if e.Type == sdl.MOUSEBUTTONUP && t.isDragging {
-			fmt.Printf("[Gesture SDL] 鼠标释放: (%d, %d)\n", e.X, e.Y)
-			return t.detectGesture(e.X, e.Y)
+			g := t.detectGesture(e.X, e.Y)
+			if g == GestureTap {
+				return g, &TapEvent{X: e.X, Y: e.Y}
+			}
+			return g, nil
 		}
 	case *sdl.TouchFingerEvent:
 		if e.Type == sdl.FINGERDOWN {
-			t.startX, t.startY = int32(e.X*376), int32(e.Y*960)
+			t.startX = int32(e.X * 376)
+			t.startY = int32(e.Y * 960)
 			t.startTime = time.Now()
 			t.isDragging = true
-			fmt.Printf("[Gesture SDL] 手指按下: (%d, %d)\n", t.startX, t.startY)
 		} else if e.Type == sdl.FINGERUP && t.isDragging {
-			endX := int32(e.X * 376)
-			endY := int32(e.Y * 960)
-			fmt.Printf("[Gesture SDL] 手指释放: (%d, %d)\n", endX, endY)
-			return t.detectGesture(endX, endY)
+			ex := int32(e.X * 376)
+			ey := int32(e.Y * 960)
+			g := t.detectGesture(ex, ey)
+			if g == GestureTap {
+				return g, &TapEvent{X: ex, Y: ey}
+			}
+			return g, nil
 		}
 	}
-	return GestureNone
+	return GestureNone, nil
 }
 
 func (t *TouchHandler) detectGesture(endX, endY int32) TouchGesture {
 	t.isDragging = false
-	
+
 	dx := endX - t.startX
 	dy := endY - t.startY
 	elapsed := time.Since(t.startTime).Milliseconds()
-	
-	fmt.Printf("[Gesture] 检测手势: dx=%d dy=%d elapsed=%dms\n", dx, dy, elapsed)
-	
-	if abs(dx) < 20 && abs(dy) < 20 && elapsed < 300 {
-		fmt.Printf("[Gesture] ✓ 识别为: 点击\n")
+
+	// 点击判定放宽：位移 < 30px 且按住 < 700ms
+	if abs(dx) < 30 && abs(dy) < 30 && elapsed < 700 {
+		log.Printf("[触摸] 点击 (%d, %d)", endX, endY)
 		return GestureTap
 	}
-	
+
 	if abs(dx) > abs(dy) && abs(dx) > 50 {
 		if dx > 0 {
-			fmt.Printf("[Gesture] ✓ 识别为: 右滑\n")
+			log.Printf("[触摸] 右滑")
 			return GestureSwipeRight
 		}
-		fmt.Printf("[Gesture] ✓ 识别为: 左滑\n")
+		log.Printf("[触摸] 左滑")
 		return GestureSwipeLeft
 	}
-	
+
 	if abs(dy) > 50 {
 		if dy > 0 {
-			fmt.Printf("[Gesture] ✓ 识别为: 下滑\n")
+			log.Printf("[触摸] 下滑")
 			return GestureSwipeDown
 		}
-		fmt.Printf("[Gesture] ✓ 识别为: 上滑\n")
+		log.Printf("[触摸] 上滑")
 		return GestureSwipeUp
 	}
-	
-	fmt.Printf("[Gesture] 无法识别手势\n")
+
+	fmt.Printf("[触摸] 未识别: dx=%d dy=%d elapsed=%dms\n", dx, dy, elapsed)
 	return GestureNone
 }
 

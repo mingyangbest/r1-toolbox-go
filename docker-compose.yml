@@ -1,0 +1,35 @@
+# R1 Toolbox Docker 编排
+#
+# 常用命令：
+#   docker compose run --rm build     # 在容器里编译，二进制落到 ./build/r1-toolbox（推荐）
+#   docker compose up -d screen       # （实验性）容器方式运行屏幕程序，见 Dockerfile 说明
+#
+services:
+  # ---- 编译服务：不需要本机装 Go，跑完在 ./build/ 里拿二进制 ----
+  build:
+    build:
+      context: .
+      target: binary
+    image: r1-toolbox:build
+    working_dir: /out
+    volumes:
+      - ./build:/out/build-out
+    # binary 阶段的 CMD 会把二进制 cp 到挂载目录
+    command: ["sh", "-c", "cp /out/r1-toolbox /out/build-out/r1-toolbox && echo '产物: ./build/r1-toolbox'"]
+
+  # ---- 运行服务（⚠️ 实验性）：需要特权与屏幕设备，仅限 R1/R1X 宿主机 ----
+  screen:
+    build:
+      context: .
+      target: runtime
+    image: r1-toolbox:latest
+    container_name: r1-toolbox
+    privileged: true
+    network_mode: host
+    devices:
+      - /dev/fb0:/dev/fb0
+      - /dev/dri:/dev/dri
+    volumes:
+      - /sys:/sys:ro
+      - /etc/r1-toolbox:/etc/r1-toolbox
+    restart: unless-stopped

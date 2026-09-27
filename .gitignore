@@ -10,13 +10,17 @@ build/
 vendor/
 go.sum
 
-# 临时文件
+# 临时与备份文件（迭代过程产生的 .bak/.orig 一律不入库）
 *.log
 *.tmp
 *.swp
 *~
+*.bak
+*.bak.*
+*.orig
+*.bak/
 
-# 配置文件（本地测试用）
+# 配置文件（本地运行时配置，含令牌，绝不入库）
 config.yaml
 backgrounds/
 
@@ -28,4 +32,4 @@ backgrounds/
 # 系统文件
 .DS_Store
 Thumbs.db
-r1-toolbox-go/web-ui/node_modules
+web-ui/node_modules/
