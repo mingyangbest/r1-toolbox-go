@@ -4,6 +4,14 @@
 
 > 本项目基于 [lemon6515/r1-toolbox-go](https://github.com/lemon6515/r1-toolbox-go) 增强 fork 而来，遵循上游 **GPL-3.0 + Commons Clause** 许可证，感谢上游作者的开源工作。
 
+## 界面预览
+
+| 概览 | CPU / 内存 | 硬盘 | 网络 | 系统 |
+|:---:|:---:|:---:|:---:|:---:|
+| ![概览](docs/screenshots/overview.png) | ![CPU内存](docs/screenshots/performance.png) | ![硬盘](docs/screenshots/disk.png) | ![网络](docs/screenshots/network.png) | ![系统](docs/screenshots/system.png) |
+
+*五页触摸翻页 · 语义配色 · 天气实况 · 全部数据可在系统内对账*
+
 ## 本 fork 的主要改进
 
 | 方向 | 内容 |
