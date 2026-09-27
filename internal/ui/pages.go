@@ -358,7 +358,7 @@ func (p *OverviewPage) Draw(c *Canvas, d *DrawCtx) {
 	}
 	} // 天气卡 clip 守卫结束
 
-	// ---------------- CPU / 内存 负载（橙 / 青 双环）----------------
+	// ---------------- CPU / 内存 负载（三态环：≤50 绿 / >50 黄 / ≥90 红）----------------
 	if c.ClipVisible(PadX, ovRingY, CardW, ovRingH) {
 	DrawCard(c, th, PadX, ovRingY, CardW, ovRingH)
 	DrawCardTitleA(c, fs, th, PadX+22, ovRingY+22, "负载", P.Cpu)
@@ -366,9 +366,9 @@ func (p *OverviewPage) Draw(c *Canvas, d *DrawCtx) {
 	cpu := clamp(d.Ease("ov.cpu", m.CPUPercent), 0, 100)
 	mem := clamp(d.Ease("ov.mem", m.MemPercent), 0, 100)
 	ovRingCY := ovRingY + 96
-	DrawMiniRing(c, fs, th, 116, ovRingCY, 56, 47, cpu/100, th.On(P.Cpu, cpu),
+	DrawMiniRing(c, fs, th, 116, ovRingCY, 56, 47, cpu/100, th.OnLoad(cpu),
 		"CPU", fmt.Sprintf("%.0f%%", cpu), FzLarge)
-	DrawMiniRing(c, fs, th, 260, ovRingCY, 56, 47, mem/100, th.On(P.Mem, mem),
+	DrawMiniRing(c, fs, th, 260, ovRingCY, 56, 47, mem/100, th.OnLoad(mem),
 		"内存", fmt.Sprintf("%.0f%%", mem), FzLarge)
 	} // 负载卡 clip 守卫结束
 
@@ -516,9 +516,9 @@ func (p *PerfPage) Draw(c *Canvas, d *DrawCtx) {
 	cpu := clamp(d.Ease("pf.cpu", m.CPUPercent), 0, 100)
 	mem := clamp(d.Ease("pf.mem", m.MemPercent), 0, 100)
 	ringCY := pfRingY + 96
-	DrawMiniRing(c, fs, th, 116, ringCY, 56, 47, cpu/100, th.On(P.Cpu, cpu),
+	DrawMiniRing(c, fs, th, 116, ringCY, 56, 47, cpu/100, th.OnLoad(cpu),
 		"CPU", fmt.Sprintf("%.0f%%", cpu), FzLarge)
-	DrawMiniRing(c, fs, th, 260, ringCY, 56, 47, mem/100, th.On(P.Mem, mem),
+	DrawMiniRing(c, fs, th, 260, ringCY, 56, 47, mem/100, th.OnLoad(mem),
 		"内存", fmt.Sprintf("%.0f%%", mem), FzLarge)
 
 	DrawHairline(c, th, PadX+40, pfRingY+198, CardW-80)
@@ -573,13 +573,13 @@ func (p *PerfPage) Draw(c *Canvas, d *DrawCtx) {
 	if barW < 40 {
 		barW = 40
 	}
-	// 底轨带内存色相；填充走告警逻辑（交换用量超过 75% 才跳金黄 / 砖红）
+	// 底轨带内存色相；填充走负载三态色（交换用量超过 50% 跳琥珀黄，≥90% 砖红）
 	c.FillRoundRect(barX, rowCY+7, barW, 6, 3, WithA(P.Mem, 46))
 	if fw := int(float64(barW)*sw/100 + 0.5); fw > 0 {
 		if fw < 6 {
 			fw = 6
 		}
-		c.FillRoundRect(barX, rowCY+7, fw, 6, 3, th.On(P.Mem, sw))
+		c.FillRoundRect(barX, rowCY+7, fw, 6, 3, th.OnLoad(sw))
 	}
 	DrawTextMixR(c, fs, rx, rowCY, FzSmall, th.Sub, valStr)
 
@@ -612,7 +612,7 @@ func (p *PerfPage) Draw(c *Canvas, d *DrawCtx) {
 			v = clamp(d.Ease("pf.c"+strconvItoa(i), m.CPUCores[i]), 0, 100)
 		}
 		DrawText(c, fs, strconvItoa(i+1), col, yy+2, FzTiny, th.Dim)
-		DrawBar(c, th, col+18, yy+9, 68, 4, v/100, th.On(P.Cpu, v))
+		DrawBar(c, th, col+18, yy+9, 68, 4, v/100, th.OnLoad(v))
 		DrawTextLR(c, fs, fmt.Sprintf("%.0f%%", v), col+colW, yy-2, FzSmall, Lit(P.Cpu, 0.28))
 	}
 
@@ -655,11 +655,11 @@ func (p *DiskPage) Draw(c *Canvas, d *DrawCtx) {
 		if i >= 3 {
 			break
 		}
-		// 按介质类型取语义色：NVMe/SSD 紫、HDD 蓝、eMMC 青 ——
-		// 于是"这一页的颜色"本身就携带了信息，而不是随手涂的
+		// 容量环/条走负载三态色（≤50 绿 / >50 黄 / ≥90 红）—— 2026-09-27 洋哥指定；
+		// 卡片描边、卷名、容量数字仍保留介质语义色（SSD 紫 / HDD 蓝 / eMMC 青）
 		dcol := P.DiskColor(v.DeviceType)
 		pct := clamp(d.Ease("disk."+strconvItoa(i), v.UsedPercent), 0, 100)
-		lv := th.On(dcol, pct)
+		lv := th.OnLoad(pct)
 
 		DrawCardA(c, th, PadX, y, CardW, dkCardH, dcol)
 

@@ -75,6 +75,24 @@ func (t *Theme) OnTemp(base RGBA, c float64) RGBA {
 	return t.OnAt(base, c, 72, 82)
 }
 
+// OnLoad 负载三态色（2026-09-27 洋哥指定，适用于 CPU / 内存 / 硬盘容量）：
+//
+//	≤50% 绿（宽裕） → >50% 琥珀黄（偏忙） → ≥90% 砖红（告急）
+//
+// 这三类负载不再走「语义色 + 75/90」的老规则 —— 常态一律绿色，
+// 颜色本身就是负载读数：绿=宽裕、黄=偏忙、红=告急。
+// 绿取调色板里网络下行的青草绿（110,202,126）。
+func (t *Theme) OnLoad(pct float64) RGBA {
+	switch {
+	case pct >= 90:
+		return t.Danger
+	case pct > 50:
+		return t.Warn
+	default:
+		return P.NetDown
+	}
+}
+
 // OnAt 通用「语义色 + 告警」叠加
 func (t *Theme) OnAt(base RGBA, v, warnAt, dangerAt float64) RGBA {
 	switch {
