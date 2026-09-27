@@ -583,7 +583,7 @@ func (p *PerfPage) Draw(c *Canvas, d *DrawCtx) {
 	}
 	DrawTextMixR(c, fs, rx, rowCY, FzSmall, th.Sub, valStr)
 
-	// ---------------- 核心负载（两列，橙色）----------------
+	// ---------------- 核心负载（两列，条与百分比走三态色）----------------
 	DrawCardA(c, th, PadX, pfCoreY, CardW, pfCoreH, P.Cpu)
 	DrawCardTitleA(c, fs, th, PadX+22, pfCoreY+22, "核心负载", P.Cpu)
 	const colW = 138
@@ -613,14 +613,14 @@ func (p *PerfPage) Draw(c *Canvas, d *DrawCtx) {
 		}
 		DrawText(c, fs, strconvItoa(i+1), col, yy+2, FzTiny, th.Dim)
 		DrawBar(c, th, col+18, yy+9, 68, 4, v/100, th.OnLoad(v))
-		DrawTextLR(c, fs, fmt.Sprintf("%.0f%%", v), col+colW, yy-2, FzSmall, Lit(P.Cpu, 0.28))
+		DrawTextLR(c, fs, fmt.Sprintf("%.0f%%", v), col+colW, yy-2, FzSmall, Lit(th.OnLoad(v), 0.28))
 	}
 
-	// ---------------- CPU 历史（橙色曲线）----------------
+	// ---------------- CPU 历史（三态曲线：颜色跟随当前负载 ≤50 绿 / >50 黄 / ≥90 红）----------------
 	DrawCardA(c, th, PadX, pfHistY, CardW, pfHistH, P.Cpu)
 	DrawCardTitleA(c, fs, th, PadX+22, pfHistY+22, "CPU 历史 · 60 秒", P.Cpu)
 	c.AreaChart(PadX+22, pfHistY+52, CardW-44, pfHistH-72,
-		m.CPUHistory, autoTop(m.CPUHistory, 10), 60, P.Cpu, P.Cpu, 1)
+		m.CPUHistory, autoTop(m.CPUHistory, 10), 60, th.OnLoad(cpu), th.OnLoad(cpu), 1)
 }
 
 // ============================================================
